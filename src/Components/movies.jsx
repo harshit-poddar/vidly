@@ -1,8 +1,26 @@
 import React, { Component } from "react";
 import { getMovies } from "../services/fakeMovieService";
 
+import ListGroup from "./Common/listGroup";
+import Pagination from "./Common/pagination";
+import { paginate } from "../utils/paginate";
+import { getGenres } from "../services/fakeGenreService";
+import MoviesTable from "./moviesTable"
+import _ from 'lodash'
+
 class Movies extends Component {
-  state = { movies: getMovies() };
+  state = {
+    movies: [],
+    genres: [],
+    pageSize: 4,
+    currentPage: 1,
+    sortColumn: { path: "title", order: "asc" },
+  };
+
+  componentDidMount() {
+    const genres = [{ _id: "",name: "All Genres" }, ...getGenres()];
+    this.setState({ movies: getMovies(), genres: genres });
+  }
 
   handleDelete = (movie) => {
     console.log(movie);
@@ -10,47 +28,74 @@ class Movies extends Component {
     //in modern js if {movies:movies} => we can write {movies}
     this.setState({ movies });
   };
+
+  handleLike = (movie) => {
+    // console.log('Clicked like', movie)
+    const movies = [...this.state.movies];
+    const idx = movies.indexOf(movie);
+    movies[idx] = { ...movies[idx] };
+    movies[idx].liked = !movies[idx].liked;
+    this.setState({ movies });
+  };
+  handlePageChange = (page) => {
+    this.setState({ currentPage: page });
+  };
+
+  handleGenreSelect = (genre) => {
+    this.setState({ selectedGenre: genre, currentPage: 1 });
+  };
+  handleSort = sortColumn => {
+    this.setState({ sortColumn });
+    // console.log(sortColumn.path)
+  };
+
   render() {
-    const {length: count} = this.state.movies;
+    const { length: count } = this.state.movies;
+    const {
+      pageSize,
+      currentPage,
+      sortColumn,
+      selectedGenre,
+      movies: allMovies, 
+    } = this.state;
+    if (count === 0) return <p> There are no movies in database</p>;
 
-    if (count === 0)
-      return <p> There are no movies in database</p>;
+    const filtered =
+      selectedGenre && selectedGenre._id
+        ? allMovies.filter((m) => m.genre._id === selectedGenre._id)
+        : allMovies;
 
+    const sorted = _.orderBy(filtered,[sortColumn.path],[sortColumn.order])
+
+    const movies = paginate(sorted, currentPage, pageSize);
     return (
-      <React.Fragment>
-        <p>Showing {count} movies in database</p>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Genre</th>
-              <th>Stock</th>
-              <th>Rate</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {this.state.movies.map((movie) => {
-              return (
-                <tr key={movie._id}>
-                  <td>{movie.title}</td>
-                  <td>{movie.genre.name}</td>
-                  <td>{movie.numberInStock}</td>
-                  <td>{movie.dailyRentalRate}</td>
-                  <td>
-                    <button
-                      onClick={() => this.handleDelete(movie)}
-                      className="btn btn-danger btn-sm"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </React.Fragment>
+      <div className="row">
+        <div className="col-3">
+          <ListGroup
+            items={this.state.genres}
+            selectedItem={this.state.selectedGenre}
+            // textProperty="name"
+            // valueProperty="_id"
+            onItemSelect={this.handleGenreSelect}
+          />
+        </div>
+        <div className="col">
+          <p>Showing {filtered.length} movies in database</p>
+          <MoviesTable
+            movies={movies}
+            sortColumn={sortColumn}
+            onLike={this.handleLike}
+            onDelete={this.handleDelete}
+            onSort = {this.handleSort}
+          />
+          <Pagination
+            itemsCount={filtered.length}
+            pageSize={pageSize}
+            currentPage={currentPage}
+            onPageChange={this.handlePageChange}
+          />
+        </div>
+      </div>
     );
   }
 }
