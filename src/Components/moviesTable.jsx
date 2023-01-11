@@ -1,7 +1,7 @@
+import { some } from "lodash";
 import React, { Component } from "react";
 import Like from "./Common/like";
-import TableBody from "./Common/tableBody";
-import TableHeader from "./Common/tableHeader";
+import Table from "./Common/table";
 
 class MoviesTable extends Component {
   columns = [
@@ -11,11 +11,13 @@ class MoviesTable extends Component {
     { path: "dailyRentalRate", label: "Rate" },
     {
       key: "like",
-      content: movie => <Like liked={movie.liked} onClick={() => this.props.onLike(movie)} />,
+      content: (movie) => (
+        <Like liked={movie.liked} onClick={() => this.props.onLike(movie)} />
+      ),
     },
     {
       key: "delete",
-      content: movie => (
+      content: (movie) => (
         <button
           onClick={() => this.props.onDelete(movie)}
           className="btn btn-danger btn-sm"
@@ -26,16 +28,14 @@ class MoviesTable extends Component {
     },
   ];
   render() {
-    const { movies, onDelete, onLike, onSort, sortColumn } = this.props;
+    const { movies, onSort, sortColumn } = this.props;
     return (
-      <table className="table">
-        <TableHeader
-          columns={this.columns}
-          sortColumn={sortColumn}
-          onSort={onSort}
-        />
-        <TableBody data={movies} columns={this.columns} />
-      </table>
+      <Table
+        columns={this.columns}
+        data={movies}
+        sortColumn={sortColumn}
+        onSort={onSort}
+      ></Table>
     );
   }
 }
